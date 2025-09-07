@@ -1,5 +1,5 @@
--- Delta Executor Enhanced Fly Script - Mobile Version (Roblox Default Controls)
--- GUI with Roblox Default Movement Controls
+-- Delta Executor Enhanced Fly Script - Mobile Version (Fixed Movement)
+-- GUI with Roblox Default Movement Controls - Improved Direction System
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -68,7 +68,7 @@ titleLabel.Name = "TitleLabel"
 titleLabel.Size = UDim2.new(1, 0, 1, 0)
 titleLabel.Position = UDim2.new(0, 0, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Mobile Fly Script"
+titleLabel.Text = "Enhanced Fly Script"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextScaled = true
 titleLabel.Font = Enum.Font.SourceSansBold
@@ -82,7 +82,7 @@ enableButton.Position = UDim2.new(0, 10, 0, 35)
 enableButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 enableButton.BorderSizePixel = 1
 enableButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-enableButton.Text = "Enable Fly"
+enableButton.Text = "Enable"
 enableButton.TextColor3 = Color3.fromRGB(0, 0, 0)
 enableButton.TextScaled = true
 enableButton.Font = Enum.Font.SourceSansBold
@@ -176,13 +176,13 @@ instructionLabel.Name = "InstructionLabel"
 instructionLabel.Size = UDim2.new(1, -20, 0, 25)
 instructionLabel.Position = UDim2.new(0, 10, 1, -30)
 instructionLabel.BackgroundTransparency = 1
-instructionLabel.Text = "Gunakan kontrol default Roblox"
+instructionLabel.Text = "Joystick: Gerak | Layar: Arah | UP/DOWN: Naik/Turun"
 instructionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-instructionLabel.TextSize = 12
+instructionLabel.TextSize = 10
 instructionLabel.Font = Enum.Font.SourceSans
 instructionLabel.Parent = mainFrame
 
--- Up/Down Control Buttons (Only for mobile)
+-- Up/Down Control Buttons
 local upDownFrame = Instance.new("Frame")
 upDownFrame.Name = "UpDownFrame"
 upDownFrame.Size = UDim2.new(0, 60, 0, 120)
@@ -219,7 +219,6 @@ downButton.Font = Enum.Font.SourceSansBold
 downButton.Parent = upDownFrame
 
 -- Movement Variables
-local moveVector = Vector3.new(0, 0, 0)
 local isUpPressed = false
 local isDownPressed = false
 
@@ -264,6 +263,15 @@ upButton.MouseButton1Up:Connect(function()
     upButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 end)
 
+upButton.TouchTap:Connect(function()
+    isUpPressed = not isUpPressed
+    if isUpPressed then
+        upButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    else
+        upButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    end
+end)
+
 downButton.MouseButton1Down:Connect(function()
     isDownPressed = true
     downButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
@@ -274,6 +282,15 @@ downButton.MouseButton1Up:Connect(function()
     downButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 end)
 
+downButton.TouchTap:Connect(function()
+    isDownPressed = not isDownPressed
+    if isDownPressed then
+        downButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    else
+        downButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    end
+end)
+
 -- Function to get movement vector from Roblox default controls
 local function getMoveVector()
     local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -281,11 +298,11 @@ local function getMoveVector()
         return Vector3.new(0, 0, 0)
     end
     
-    -- Get movement direction from Roblox's default controls
+    -- Get movement direction from Roblox's default controls (joystick input)
     return humanoid.MoveDirection
 end
 
--- Fly Functions
+-- Improved Fly Functions with proper direction system
 local function startFlying()
     local character = player.Character
     if not character then return false end
@@ -317,10 +334,8 @@ local function startFlying()
     
     flying = true
     
-    -- Show up/down controls for mobile
-    if UserInputService.TouchEnabled then
-        upDownFrame.Visible = true
-    end
+    -- Show up/down controls
+    upDownFrame.Visible = true
     
     -- Start fly loop
     flyConnection = RunService.Heartbeat:Connect(function()
@@ -328,14 +343,16 @@ local function startFlying()
             local camera = workspace.CurrentCamera
             local direction = Vector3.new(0, 0, 0)
             
-            -- Get horizontal movement from Roblox default controls
+            -- Get horizontal movement from Roblox default joystick
             local moveDirection = getMoveVector()
             if moveDirection.Magnitude > 0 then
-                -- Convert 2D movement to 3D world space
-                local cameraCFrame = camera.CFrame
-                local rightVector = cameraCFrame.RightVector
-                local forwardVector = Vector3.new(cameraCFrame.LookVector.X, 0, cameraCFrame.LookVector.Z).Unit
+                -- Use rootPart orientation instead of camera for movement direction
+                -- This makes joystick control the actual movement, not relative to camera
+                local rootCFrame = rootPart.CFrame
+                local rightVector = rootCFrame.RightVector
+                local forwardVector = rootCFrame.LookVector
                 
+                -- Apply joystick input directly to character's orientation
                 direction = direction + (rightVector * moveDirection.X) + (forwardVector * -moveDirection.Z)
             end
             
@@ -358,6 +375,14 @@ local function startFlying()
             -- Apply velocity
             local speed = flySpeed * 50
             bodyVelocity.Velocity = direction * speed
+            
+            -- Character rotation follows camera look direction (for turning)
+            local cameraCFrame = camera.CFrame
+            local lookDirection = Vector3.new(cameraCFrame.LookVector.X, 0, cameraCFrame.LookVector.Z).Unit
+            local targetCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + lookDirection)
+            
+            -- Smooth rotation towards camera direction
+            rootPart.CFrame = rootPart.CFrame:Lerp(targetCFrame, 0.1)
             
             -- Keep character upright
             if bodyAngularVelocity and bodyAngularVelocity.Parent then
@@ -404,17 +429,17 @@ enableButton.MouseButton1Click:Connect(function()
     flyEnabled = not flyEnabled
     
     if flyEnabled then
-        enableButton.Text = "Disable Fly"
+        enableButton.Text = "Disable"
         enableButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
         
         if not startFlying() then
             flyEnabled = false
-            enableButton.Text = "Enable Fly"
+            enableButton.Text = "Enable"
             enableButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             warn("Failed to start flying - Character not loaded")
         end
     else
-        enableButton.Text = "Enable Fly"
+        enableButton.Text = "Enable"
         enableButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         stopFlying()
     end
@@ -438,18 +463,11 @@ hideButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     showButton.Visible = true
     -- Keep up/down buttons visible when main GUI is hidden if fly is enabled
-    if not flyEnabled then
-        upDownFrame.Visible = false
-    end
 end)
 
 showButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = true
     showButton.Visible = false
-    -- Show up/down buttons if fly is enabled and on mobile
-    if flyEnabled and UserInputService.TouchEnabled then
-        upDownFrame.Visible = true
-    end
 end)
 
 -- Character respawn handling
@@ -460,7 +478,7 @@ player.CharacterAdded:Connect(function()
         wait(1)
         if not startFlying() then
             flyEnabled = false
-            enableButton.Text = "Enable Fly"
+            enableButton.Text = "Enable"
             enableButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         end
     end
@@ -469,18 +487,16 @@ end)
 -- Initialize - Hide up/down controls initially
 upDownFrame.Visible = false
 
-print("Mobile Fly Script loaded successfully!")
-print("Menggunakan kontrol default Roblox!")
+print("Enhanced Fly Script loaded successfully!")
+print("SISTEM KONTROL YANG DIPERBAIKI:")
+print("✅ JOYSTICK ROBLOX = Mengatur pergerakan (maju/mundur/kiri/kanan)")
+print("✅ LAYAR/SWIPE = Mengatur arah pandang dan arah terbang")  
+print("✅ UP/DOWN BUTTON = Naik dan turun")
+print("")
 print("Cara menggunakan:")
-if UserInputService.TouchEnabled then
-    print("MOBILE:")
-    print("1. Tekan 'Enable Fly' untuk mulai terbang")
-    print("2. Gunakan thumbstick/joystick default Roblox untuk bergerak")
-    print("3. Gunakan tombol UP/DOWN untuk naik/turun")
-else
-    print("PC:")
-    print("1. Tekan 'Enable Fly' untuk mulai terbang") 
-    print("2. Gunakan WASD untuk bergerak")
-    print("3. Gunakan Space untuk naik, Shift untuk turun")
-end
-print("4. Drag sudut kanan bawah untuk resize GUI")
+print("1. Tekan 'Enable' untuk mulai terbang")
+print("2. Gunakan JOYSTICK untuk bergerak (maju/mundur/kiri/kanan)")
+print("3. Geser/swipe LAYAR untuk mengatur arah pandang") 
+print("4. Gunakan tombol UP/DOWN untuk naik/turun")
+print("5. Karakter akan mengikuti arah pandang kamera")
+print("6. Drag sudut kanan bawah GUI untuk resize")
