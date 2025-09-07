@@ -1,9 +1,10 @@
--- Delta Executor Fly Script - Fixed Version
--- Minimalist GUI with draggable interface
+-- Delta Executor Enhanced Fly Script - Mobile Version (Roblox Default Controls)
+-- GUI with Roblox Default Movement Controls
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local ContextActionService = game:GetService("ContextActionService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -11,28 +12,46 @@ local playerGui = player:WaitForChild("PlayerGui")
 -- Variables
 local flyEnabled = false
 local flySpeed = 1
-local bodyVelocity = nil
-local bodyAngularVelocity = nil
 local flying = false
 local flyConnection = nil
 
 -- GUI Creation
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FlyGUI"
+screenGui.Name = "MobileFlyGUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Main Frame (Draggable)
+-- Main Frame (Draggable and Resizable)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 220, 0, 180)
-mainFrame.Position = UDim2.new(0, 50, 0, 50)
+mainFrame.Size = UDim2.new(0, 250, 0, 200)
+mainFrame.Position = UDim2.new(0, 20, 0, 20)
 mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 mainFrame.BorderSizePixel = 2
 mainFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
+
+-- Resize Handle (Bottom Right Corner)
+local resizeHandle = Instance.new("Frame")
+resizeHandle.Name = "ResizeHandle"
+resizeHandle.Size = UDim2.new(0, 20, 0, 20)
+resizeHandle.Position = UDim2.new(1, -20, 1, -20)
+resizeHandle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+resizeHandle.BorderSizePixel = 1
+resizeHandle.BorderColor3 = Color3.fromRGB(255, 255, 255)
+resizeHandle.Active = true
+resizeHandle.Parent = mainFrame
+
+local resizeIndicator = Instance.new("TextLabel")
+resizeIndicator.Size = UDim2.new(1, 0, 1, 0)
+resizeIndicator.BackgroundTransparency = 1
+resizeIndicator.Text = "⟋"
+resizeIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
+resizeIndicator.TextScaled = true
+resizeIndicator.Font = Enum.Font.SourceSans
+resizeIndicator.Parent = resizeHandle
 
 -- Title Bar
 local titleBar = Instance.new("Frame")
@@ -49,7 +68,7 @@ titleLabel.Name = "TitleLabel"
 titleLabel.Size = UDim2.new(1, 0, 1, 0)
 titleLabel.Position = UDim2.new(0, 0, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Enhanced Fly Script"
+titleLabel.Text = "Mobile Fly Script"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextScaled = true
 titleLabel.Font = Enum.Font.SourceSansBold
@@ -58,12 +77,12 @@ titleLabel.Parent = titleBar
 -- Enable Button
 local enableButton = Instance.new("TextButton")
 enableButton.Name = "EnableButton"
-enableButton.Size = UDim2.new(0, 200, 0, 30)
+enableButton.Size = UDim2.new(1, -20, 0, 30)
 enableButton.Position = UDim2.new(0, 10, 0, 35)
 enableButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 enableButton.BorderSizePixel = 1
 enableButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-enableButton.Text = "Enable"
+enableButton.Text = "Enable Fly"
 enableButton.TextColor3 = Color3.fromRGB(0, 0, 0)
 enableButton.TextScaled = true
 enableButton.Font = Enum.Font.SourceSansBold
@@ -77,10 +96,9 @@ speedFrame.Position = UDim2.new(0, 10, 0, 75)
 speedFrame.BackgroundTransparency = 1
 speedFrame.Parent = mainFrame
 
--- Speed Decrease Button
 local speedDownButton = Instance.new("TextButton")
 speedDownButton.Name = "SpeedDown"
-speedDownButton.Size = UDim2.new(0, 30, 0, 30)
+speedDownButton.Size = UDim2.new(0, 30, 1, 0)
 speedDownButton.Position = UDim2.new(0, 0, 0, 0)
 speedDownButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 speedDownButton.BorderSizePixel = 1
@@ -91,10 +109,9 @@ speedDownButton.TextScaled = true
 speedDownButton.Font = Enum.Font.SourceSansBold
 speedDownButton.Parent = speedFrame
 
--- Speed Increase Button
 local speedUpButton = Instance.new("TextButton")
 speedUpButton.Name = "SpeedUp"
-speedUpButton.Size = UDim2.new(0, 30, 0, 30)
+speedUpButton.Size = UDim2.new(0, 30, 1, 0)
 speedUpButton.Position = UDim2.new(0, 40, 0, 0)
 speedUpButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 speedUpButton.BorderSizePixel = 1
@@ -105,10 +122,9 @@ speedUpButton.TextScaled = true
 speedUpButton.Font = Enum.Font.SourceSansBold
 speedUpButton.Parent = speedFrame
 
--- Speed Display
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Name = "SpeedLabel"
-speedLabel.Size = UDim2.new(0, 120, 0, 30)
+speedLabel.Size = UDim2.new(1, -80, 1, 0)
 speedLabel.Position = UDim2.new(0, 80, 0, 0)
 speedLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 speedLabel.BorderSizePixel = 1
@@ -127,10 +143,9 @@ controlFrame.Position = UDim2.new(0, 10, 0, 115)
 controlFrame.BackgroundTransparency = 1
 controlFrame.Parent = mainFrame
 
--- Hide Button (X)
 local hideButton = Instance.new("TextButton")
 hideButton.Name = "HideButton"
-hideButton.Size = UDim2.new(0, 95, 0, 30)
+hideButton.Size = UDim2.new(0.48, 0, 1, 0)
 hideButton.Position = UDim2.new(0, 0, 0, 0)
 hideButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 hideButton.BorderSizePixel = 1
@@ -141,11 +156,10 @@ hideButton.TextScaled = true
 hideButton.Font = Enum.Font.SourceSans
 hideButton.Parent = controlFrame
 
--- Show Button (V) - Initially hidden
 local showButton = Instance.new("TextButton")
 showButton.Name = "ShowButton"
-showButton.Size = UDim2.new(0, 95, 0, 30)
-showButton.Position = UDim2.new(0, 105, 0, 0)
+showButton.Size = UDim2.new(0, 100, 0, 30)
+showButton.Position = UDim2.new(0, 20, 0, 20)
 showButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 showButton.BorderSizePixel = 1
 showButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -159,14 +173,117 @@ showButton.Parent = screenGui
 -- Instructions Label
 local instructionLabel = Instance.new("TextLabel")
 instructionLabel.Name = "InstructionLabel"
-instructionLabel.Size = UDim2.new(1, -20, 0, 20)
-instructionLabel.Position = UDim2.new(0, 10, 0, 155)
+instructionLabel.Size = UDim2.new(1, -20, 0, 25)
+instructionLabel.Position = UDim2.new(0, 10, 1, -30)
 instructionLabel.BackgroundTransparency = 1
-instructionLabel.Text = "WASD: Move | Space/Shift: Up/Down"
+instructionLabel.Text = "Gunakan kontrol default Roblox"
 instructionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 instructionLabel.TextSize = 12
 instructionLabel.Font = Enum.Font.SourceSans
 instructionLabel.Parent = mainFrame
+
+-- Up/Down Control Buttons (Only for mobile)
+local upDownFrame = Instance.new("Frame")
+upDownFrame.Name = "UpDownFrame"
+upDownFrame.Size = UDim2.new(0, 60, 0, 120)
+upDownFrame.Position = UDim2.new(1, -80, 1, -140)
+upDownFrame.BackgroundTransparency = 1
+upDownFrame.Parent = screenGui
+
+-- Up Button
+local upButton = Instance.new("TextButton")
+upButton.Name = "UpButton"
+upButton.Size = UDim2.new(1, 0, 0, 55)
+upButton.Position = UDim2.new(0, 0, 0, 0)
+upButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+upButton.BorderSizePixel = 2
+upButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+upButton.Text = "UP"
+upButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+upButton.TextScaled = true
+upButton.Font = Enum.Font.SourceSansBold
+upButton.Parent = upDownFrame
+
+-- Down Button
+local downButton = Instance.new("TextButton")
+downButton.Name = "DownButton"
+downButton.Size = UDim2.new(1, 0, 0, 55)
+downButton.Position = UDim2.new(0, 0, 0, 65)
+downButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+downButton.BorderSizePixel = 2
+downButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+downButton.Text = "DOWN"
+downButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+downButton.TextScaled = true
+downButton.Font = Enum.Font.SourceSansBold
+downButton.Parent = upDownFrame
+
+-- Movement Variables
+local moveVector = Vector3.new(0, 0, 0)
+local isUpPressed = false
+local isDownPressed = false
+
+-- Resize Functionality
+local resizing = false
+local resizeStart = nil
+local startSize = nil
+
+resizeHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        resizing = true
+        resizeStart = input.Position
+        startSize = mainFrame.Size
+        mainFrame.Draggable = false
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                resizing = false
+                mainFrame.Draggable = true
+            end
+        end)
+    end
+end)
+
+resizeHandle.InputChanged:Connect(function(input)
+    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - resizeStart
+        local newWidth = math.max(200, startSize.X.Offset + delta.X)
+        local newHeight = math.max(150, startSize.Y.Offset + delta.Y)
+        mainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+    end
+end)
+
+-- Up/Down Button Events
+upButton.MouseButton1Down:Connect(function()
+    isUpPressed = true
+    upButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+upButton.MouseButton1Up:Connect(function()
+    isUpPressed = false
+    upButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+end)
+
+downButton.MouseButton1Down:Connect(function()
+    isDownPressed = true
+    downButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+downButton.MouseButton1Up:Connect(function()
+    isDownPressed = false
+    downButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+end)
+
+-- Function to get movement vector from Roblox default controls
+local function getMoveVector()
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then
+        return Vector3.new(0, 0, 0)
+    end
+    
+    -- Get movement direction from Roblox's default controls
+    return humanoid.MoveDirection
+end
 
 -- Fly Functions
 local function startFlying()
@@ -178,42 +295,51 @@ local function startFlying()
     
     if not humanoid or not rootPart then return false end
     
-    -- Create BodyVelocity
-    bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    -- Clean up existing fly objects
+    for _, obj in pairs(rootPart:GetChildren()) do
+        if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("BodyAngularVelocity") then
+            obj:Destroy()
+        end
+    end
+    
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = rootPart
     
-    -- Create BodyAngularVelocity
-    bodyAngularVelocity = Instance.new("BodyAngularVelocity")
-    bodyAngularVelocity.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    local bodyAngularVelocity = Instance.new("BodyAngularVelocity")
+    bodyAngularVelocity.MaxTorque = Vector3.new(0, math.huge, 0)
     bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
     bodyAngularVelocity.Parent = rootPart
     
-    -- Disable character states
+    -- Disable default walking
     humanoid.PlatformStand = true
     
     flying = true
     
+    -- Show up/down controls for mobile
+    if UserInputService.TouchEnabled then
+        upDownFrame.Visible = true
+    end
+    
     -- Start fly loop
     flyConnection = RunService.Heartbeat:Connect(function()
-        if flying and bodyVelocity and rootPart then
+        if flying and bodyVelocity and bodyVelocity.Parent then
             local camera = workspace.CurrentCamera
             local direction = Vector3.new(0, 0, 0)
             
-            -- Movement controls
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                direction = direction + camera.CFrame.LookVector
+            -- Get horizontal movement from Roblox default controls
+            local moveDirection = getMoveVector()
+            if moveDirection.Magnitude > 0 then
+                -- Convert 2D movement to 3D world space
+                local cameraCFrame = camera.CFrame
+                local rightVector = cameraCFrame.RightVector
+                local forwardVector = Vector3.new(cameraCFrame.LookVector.X, 0, cameraCFrame.LookVector.Z).Unit
+                
+                direction = direction + (rightVector * moveDirection.X) + (forwardVector * -moveDirection.Z)
             end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                direction = direction - camera.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                direction = direction - camera.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                direction = direction + camera.CFrame.RightVector
-            end
+            
+            -- Handle keyboard up/down for PC
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
                 direction = direction + Vector3.new(0, 1, 0)
             end
@@ -221,8 +347,22 @@ local function startFlying()
                 direction = direction - Vector3.new(0, 1, 0)
             end
             
+            -- Handle mobile up/down buttons
+            if isUpPressed then
+                direction = direction + Vector3.new(0, 1, 0)
+            end
+            if isDownPressed then
+                direction = direction - Vector3.new(0, 1, 0)
+            end
+            
             -- Apply velocity
-            bodyVelocity.Velocity = direction * (flySpeed * 16)
+            local speed = flySpeed * 50
+            bodyVelocity.Velocity = direction * speed
+            
+            -- Keep character upright
+            if bodyAngularVelocity and bodyAngularVelocity.Parent then
+                bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
+            end
         end
     end)
     
@@ -237,21 +377,24 @@ local function stopFlying()
         flyConnection = nil
     end
     
-    if bodyVelocity then
-        bodyVelocity:Destroy()
-        bodyVelocity = nil
-    end
-    
-    if bodyAngularVelocity then
-        bodyAngularVelocity:Destroy()
-        bodyAngularVelocity = nil
-    end
+    -- Hide up/down controls
+    upDownFrame.Visible = false
     
     local character = player.Character
     if character then
         local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        
         if humanoid then
             humanoid.PlatformStand = false
+        end
+        
+        if rootPart then
+            for _, obj in pairs(rootPart:GetChildren()) do
+                if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("BodyAngularVelocity") then
+                    obj:Destroy()
+                end
+            end
         end
     end
 end
@@ -261,16 +404,17 @@ enableButton.MouseButton1Click:Connect(function()
     flyEnabled = not flyEnabled
     
     if flyEnabled then
-        enableButton.Text = "Disable"
+        enableButton.Text = "Disable Fly"
         enableButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
         
         if not startFlying() then
             flyEnabled = false
-            enableButton.Text = "Enable"
+            enableButton.Text = "Enable Fly"
             enableButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            warn("Failed to start flying - Character not loaded")
         end
     else
-        enableButton.Text = "Enable"
+        enableButton.Text = "Enable Fly"
         enableButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         stopFlying()
     end
@@ -293,36 +437,50 @@ end)
 hideButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     showButton.Visible = true
-    showButton.Position = UDim2.new(0, 50, 0, 50)
+    -- Keep up/down buttons visible when main GUI is hidden if fly is enabled
+    if not flyEnabled then
+        upDownFrame.Visible = false
+    end
 end)
 
 showButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = true
     showButton.Visible = false
+    -- Show up/down buttons if fly is enabled and on mobile
+    if flyEnabled and UserInputService.TouchEnabled then
+        upDownFrame.Visible = true
+    end
 end)
 
 -- Character respawn handling
 player.CharacterAdded:Connect(function()
-    wait(2)
+    wait(3)
     if flyEnabled then
         stopFlying()
         wait(1)
         if not startFlying() then
             flyEnabled = false
-            enableButton.Text = "Enable"
+            enableButton.Text = "Enable Fly"
             enableButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         end
     end
 end)
 
--- Show GUI immediately when script loads
-mainFrame.Visible = true
+-- Initialize - Hide up/down controls initially
+upDownFrame.Visible = false
 
-print("Enhanced Fly Script loaded successfully!")
-print("GUI is now visible!")
-print("Controls:")
-print("- WASD: Movement")
-print("- Space: Fly Up") 
-print("- Left Shift: Fly Down")
-print("- Click X button to hide GUI")
-print("- Click V button to show GUI")
+print("Mobile Fly Script loaded successfully!")
+print("Menggunakan kontrol default Roblox!")
+print("Cara menggunakan:")
+if UserInputService.TouchEnabled then
+    print("MOBILE:")
+    print("1. Tekan 'Enable Fly' untuk mulai terbang")
+    print("2. Gunakan thumbstick/joystick default Roblox untuk bergerak")
+    print("3. Gunakan tombol UP/DOWN untuk naik/turun")
+else
+    print("PC:")
+    print("1. Tekan 'Enable Fly' untuk mulai terbang") 
+    print("2. Gunakan WASD untuk bergerak")
+    print("3. Gunakan Space untuk naik, Shift untuk turun")
+end
+print("4. Drag sudut kanan bawah untuk resize GUI")
